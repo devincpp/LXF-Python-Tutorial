@@ -1,64 +1,73 @@
-# %%
+import os
+import time
 from bs4 import BeautifulSoup as bs
 import requests
-from selenium import webdriver
-import time
 import pyautogui
+from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.by import By
 
 
-def get_urls(urls,titles):
-    headers = {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36'}
+def get_urls(base_url):
+    response = requests.get(base_url, proxies = { "http": None, "https": None})
 
-    response = requests.get("https://www.liaoxuefeng.com/wiki/1016959663602400",headers = headers)  
-    soup = bs(response.content, "html.parser")  
-    menu_tag = soup.find_all(class_="uk-nav uk-nav-side")[1]
+    soup = bs(response.content, "html.parser")
+    menu_tag = soup.find_all(class_ = "uk-nav uk-nav-side")[1]
 
-    dep=[0,0,0,0]
-    for li in menu_tag.find_all("div"):  
-        url = "http://www.liaoxuefeng.com" + li.a.get('href')  
-        urls.append(url)
-        i=int(li['depth'])
-        dep[i]+=1
-        for a in range(i+1,4):
-            dep[a]=0
-        titles.append('{:0=2d}.{}.{}{}'.format(dep[1],dep[2],dep[3],li.a.string))
+    urls = []
+    titles = []
+    levels = [0, 0, 0, 0]
+    for li in menu_tag.find_all("div"):
+        urls.append("http://www.liaoxuefeng.com" + li.a.get('href'))
 
-def download_md(path,browser):
+        i = int(li['depth'])
+        levels[i] += 1
+        for c in range(i + 1, 4):
+            levels[c] = 0
+        titles.append('{:0=2d}.{}.{}{}'.format(levels[1], levels[2], levels[3], li.a.string))
+
+    return urls, titles
+
+
+def download_md(browser, url):
     # path='https://www.liaoxuefeng.com/wiki/1016959663602400/1017639890281664'
-    browser.get(path)
-    time.sleep(4)
+    browser.get(url)
+    time.sleep(6)
 
+    # 通过快捷键点击插件
     # pyautogui.click(800, 800)
-    # pyautogui.hotkey('ctrl', 'a')
     # pyautogui.hotkey('ctrl', 'q')
-    image_path=r'C:\Users\Theigrams\Desktop\aa.png'
-    img_location = pyautogui.locateOnScreen(image_path, confidence=0.6)
+
+    # 通过定位图片点击简悦插件
+    image_path = os.environ.get("USERPROFILE") + r'\Desktop\a1.png'
+    img_location = pyautogui.locateOnScreen(image = image_path, confidence = 0.5)
     image_location_point = pyautogui.center(img_location)
     x, y = image_location_point
     pyautogui.click(x, y)
 
-    anchor_button=browser.find_element_by_xpath('//*[@id="anchor"]')
-
+    # 移动鼠标至三个点处
+    anchor_button = browser.find_element(By.XPATH, '//*[@id="anchor"]')
     ActionChains(browser).move_to_element(anchor_button).perform()
-
-    act_button=browser.find_element_by_xpath('/html/div/sr-read/sr-rd-crlbar/fap/panel-bg/panel/panel-tabs/panel-tab[2]/span')
-
+    # 移动鼠标至动作标签页
+    act_button = browser.find_element(By.XPATH, '/html/div/sr-read/sr-rd-crlbar/fap/panel-bg/panel/panel-tabs/panel-tab[2]/span')
     ActionChains(browser).move_to_element(act_button).perform()
-
-    md_button=browser.find_element_by_xpath("/html/div/sr-read/sr-rd-crlbar/fap/panel-bg/panel/panel-groups/panel-group[2]/action-bar/sr-opt-gp[3]/actions/a[5]/button-mask/button-span")
-
+    # 点击导出为PDF
+    # md_button = browser.find_element(By.XPATH, "/html/div/sr-read/sr-rd-crlbar/fap/panel-bg/panel/panel-groups/panel-group[2]/action-bar/sr-opt-gp[2]/actions/action-item[3]")
+    # 点击导出为Markdown
+    md_button = browser.find_element(By.XPATH, "/html/div/sr-read/sr-rd-crlbar/fap/panel-bg/panel/panel-groups/panel-group[2]/action-bar/sr-opt-gp[2]/actions/action-item[5]")
     md_button.click()
 
-urls = []
-titles=[]
-get_urls(urls,titles)
 
-#%% 
-option = webdriver.ChromeOptions()
-option.add_argument("--user-data-dir="+r"C:/Users/Theigrams/AppData/Local/Google/Chrome/User Data/")
-browser = webdriver.Chrome(chrome_options=option)
+# https://chromedriver.chromium.org/downloads
+options = webdriver.ChromeOptions()
+profile_dir = os.environ.get("USERPROFILE") + r"\AppData\Local\Google\Chrome\User Data"
+options.add_argument("--user-data-dir=" + profile_dir)
+driver = webdriver.Chrome(chrome_options = options)
+
+base_url = "https://www.liaoxuefeng.com/wiki/1252599548343744"
+urls, titles = get_urls(base_url)
 
 for url in urls:
-    download_md(url,browser)
+    download_md(driver, url)
 
+driver.close()
