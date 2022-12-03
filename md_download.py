@@ -39,7 +39,9 @@ def download_md(browser, url):
     # pyautogui.hotkey('ctrl', 'q')
 
     # 通过定位图片点击简悦插件
-    image_path = os.environ.get("USERPROFILE") + r'\Desktop\a1.png'
+    # image_path = os.environ.get("USERPROFILE") + r'\Desktop\a1.png'
+    dirname, basename = os.path.split(os.path.realpath(__file__))
+    image_path = os.path.join(dirname, "ext_icons.png")
     img_location = pyautogui.locateOnScreen(image = image_path, confidence = 0.5)
     image_location_point = pyautogui.center(img_location)
     x, y = image_location_point
@@ -59,6 +61,7 @@ def download_md(browser, url):
 
 
 # https://chromedriver.chromium.org/downloads
+# file: chromedriver.exe  md5sum: 206b032735e207516d48e1354bcffe3e
 options = webdriver.ChromeOptions()
 profile_dir = os.environ.get("USERPROFILE") + r"\AppData\Local\Google\Chrome\User Data"
 options.add_argument("--user-data-dir=" + profile_dir)
